@@ -56,6 +56,8 @@ def user_information():
     skin =  request.get_json("skin")
     cloth = request.get_json("cloth")
     #faceS,hairS,hairC,skin,cloth = request.form.getlist('')
+    session['username'] = name
+    session['room'] = "basement"
     if Player_list_by_name[name] is not None:
         return 0;
     Player_list_by_sid[request.sid] = Player(name,faceS,hairS,hairC,skin,cloth)
@@ -90,7 +92,7 @@ def user_information(data):
     session['room'] = change_data['loc']
     new_room = session.get('room')
     join_room(new_room)
-    name_space = '/'+ data['loc']
+    name_space = '/'+ data['cur_loc']
     emit("change_response",change_data,name_space)
 
 
