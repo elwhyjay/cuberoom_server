@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, url_for, jsonify
+from flask import Flask, render_template, request, url_for, jsonify, session
 from flask.helpers import send_from_directory
 from flask_socketio import SocketIO, join_room,emit, rooms, send,close_room, join_room, leave_room
 import random
@@ -72,22 +72,36 @@ def user_information():
 def foo():
     return 0
 
-@socketio.on('change_loaction','character-generotr')
+@socketio.on('change_loaction','character-generator')
 def user_information(data):
     username = data['username']
-    Player_list_by_sid['name'].loc = data['loc']
+    Player_list_by_sid['name'].loc = data['cur_loc']
+    previous_room = data['prev_loc']
+    leave_room(previous_room)
     change_data = {
         'name' : username,
-        'faceS' : Player_list_by_sid['name'].faceS,
-        'hairsS' : Player_list_by_sid['name'].hairS,
-        'hairC' : Player_list_by_sid['name'].hairC,
-        'skin' : Player_list_by_sid['name'].skin,
-        'cloth' : Player_list_by_sid['name'].cloth,
-        'loc' : Player_list_by_sid['name'].loc,
+        'faceS' : Player_list_by_sid['faceS'].faceS,
+        'hairsS' : Player_list_by_sid['hairS'].hairS,
+        'hairC' : Player_list_by_sid['hairC'].hairC,
+        'skin' : Player_list_by_sid['skin'].skin,
+        'cloth' : Player_list_by_sid['cloth'].cloth,
+        'loc' : Player_list_by_sid['cur_loc'].loc,
     }
-    
+    session['room'] = change_data['loc']
+    new_room = session.get('room')
+    join_room(new_room)
     name_space = '/'+ data['loc']
-    emit("response",change_data,name_space)
+    emit("change_response",change_data,name_space)
+
+
+
+@socketio.on('text', namespace='/chat')
+def text(message):
+    """Sent by a client when the user entered a new message.
+    The message is sent to all people in the room."""
+    room = session.get('room')
+    emit('message', {'msg': session.get('name') + ':' + message['msg']}, room=room)
+
 
 @socketio.on('connection','/entrance')
 def message(data):
