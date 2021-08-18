@@ -1,3 +1,5 @@
+#wsgi.py
+
 from flask import Flask, render_template, request, url_for, jsonify, session
 from flask.helpers import send_from_directory
 from flask_socketio import SocketIO, join_room,emit, rooms, send,close_room, join_room, leave_room
@@ -19,6 +21,8 @@ class Player():
         self.skin = skin
         self.cloth = cloth
         self.loc = loc
+
+
     def return_path(self):
         return self.skin+"_"+self.hairC+"_"+self.cloth+"_"+self.hairS+"_"+self.faceS
 
@@ -37,12 +41,12 @@ socketio = SocketIO(app)
 
 @app.route("/")
 def base():
-    return send_from_directory('cuberoom-main/public','index.html')
+    return send_from_directory('cuberoom/public','index.html')
 
 
 @app.route("/<path:path>")
 def home(path):
-    return send_from_directory('cuberoom-main/public',path)
+    return send_from_directory('cuberoom/public',path)
 
 
 
@@ -56,8 +60,6 @@ def user_information():
     skin =  request.get_json("skin")
     cloth = request.get_json("cloth")
     #faceS,hairS,hairC,skin,cloth = request.form.getlist('')
-    session['username'] = name
-    session['room'] = "basement"
     if Player_list_by_name[name] is not None:
         return 0;
     Player_list_by_sid[request.sid] = Player(name,faceS,hairS,hairC,skin,cloth)
@@ -70,9 +72,7 @@ def user_information():
    ##                 cloth = request.get_json("cloth"),)
     return  filePath
 
-@app.route("./game")
-def foo():
-    return 0
+
 
 @socketio.on('change_loaction','character-generator')
 def user_information(data):
@@ -96,31 +96,55 @@ def user_information(data):
     emit("change_response",change_data,name_space)
 
 
-
+#########################################################################################
 @socketio.on('text', namespace='/chat')
 def text(message):
     """Sent by a client when the user entered a new message.
     The message is sent to all people in the room."""
     room = session.get('room')
     emit('message', {'msg': session.get('name') + ':' + message['msg']}, room=room)
+#########################################################################################
 
-
-@socketio.on('connection','/entrance')
+@socketio.on('entrance_connection','/entrance')
 def message(data):
-    emit("response",data,namespace = './entrance')
+    emit("entrance_response",data,namespace = './entrance',broadcast = True)
 
-@socketio.on('connection','/basement')
+@socketio.on('1F_connection','/1F')
 def message(data):
-    emit("response",data,namespace = './basement')
+    Player_list_by_sid[data['id']]
+    emit("1F_response",data,namespace = '/1F',broadcast = True)
 
-@socketio.on('connection','/firstFloor')
+@socketio.on('2F_connection','/2F')
 def message(data):
-    emit("response",data,namespace = '/firstFloor')
+    emit("2F_response",data,namespace = '/2F',broadcast = True)
 
-@socketio.on('connection','/secondFloor')
+# @socketio.on('3F_connection','/3F')
+# def message(data):
+#     emit("3F_response",data,namespace = '/3F',broadcast = True)
+
+@socketio.on('5F_connection','/5F')
 def message(data):
-    emit("response",data,namespace = '/secondFloor')
+    emit("5F_response",data,namespace = '/5F',broadcast = True)
 
+@socketio.on('6F_connection','/6F')
+def message(data):
+    emit("6F_response",data,namespace = '/6F',broadcast = True)
+
+@socketio.on('7F_connection','/7F')
+def message(data):
+    emit("7F_response",data,namespace = '/7F',broadcast = True)
+
+@socketio.on('8F_connection','/8F')
+def message(data):
+    emit("8F_response",data,namespace = '/8F',broadcast = True)
+
+@socketio.on('1B_connection','/1B')
+def message(data):
+    emit("1B_response",data,namespace = '/1B',broadcast = True)
+
+@socketio.on('2B_connection','/2B')
+def message(data):
+    emit("2B_response",data,namespace = '/2B',broadcast = True)
 
 
 if __name__ == "__main__":
