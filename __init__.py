@@ -13,24 +13,25 @@ import os
 
 
 class Player():
-    def __init__ (self,playerName="unnamed",faceS = "face1", hairS = "hairS1", hairC = "hairC1", skin = "skin1", cloth = "cloth1", loc ="basement" ):
+    def __init__ (self,playerName="unnamed", avatar_path="",loc ="basement",x = 16*6, y = 16*11): #faceS = "face1", hairS = "hairS1", hairC = "hairC1", skin = "skin1", cloth = "cloth1"
+        avatar =  avatar_path.split('_')
         self.playerName = playerName
-        self.faceS = faceS
-        self.hairS = hairS
-        self.hairC = hairC
-        self.skin = skin
-        self.cloth = cloth
+        # self.faceS = faceS
+        # self.hairS = hairS
+        # self.hairC = hairC
+        # self.skin = skin
+        # self.cloth = cloth
+        self.avatar_path = avatar_path
         self.loc = loc
+        self.x = x
+        self.y = y
 
 
-    def return_path(self):
-        return self.skin+"_"+self.hairC+"_"+self.cloth+"_"+self.hairS+"_"+self.faceS
-
-Player_list_by_sid = []
-Player_list_by_name = []
-first_floor_player = []
-basement_floor_player = []
-second_floor_player = []
+Player_list_by_sid = {}
+Player_list_by_name = {}
+first_floor_player = {}
+basement_floor_player = {}
+second_floor_player = {}
 
 app = Flask(__name__)
 app.secret_key = "cuberoom"
@@ -93,7 +94,7 @@ def user_information(data):
     new_room = session.get('room')
     join_room(new_room)
     name_space = '/'+ data['cur_loc']
-    emit("change_response",change_data,name_space)
+    emit("change_response",change_data, namespace = name_space)
 
 
 #########################################################################################
@@ -146,6 +147,37 @@ def message(data):
 def message(data):
     emit("2B_response",data,namespace = '/2B',broadcast = True)
 
+
+@socektio.on('addChat')
+def add_chat(data):
+    loc = data['loc']
+    chat_namespace = '/'+loc
+    Player_list_by_name[data['name']]
+
+    emit('addChat',{'player_name' : data['name'],'msg' : data['msg']},namespace = chat_namespace, broadcast = True)
+
+@socketio.on("removeChat")
+def remove_chat(data):
+    loc = data['loc']
+    chat_namespace = '/' + loc
+    emit('removeChat',{'name' : data['name'], 'msg': ''},namespace =chat_namespace, broadcast = True)
+
+@socketio.on("player_movement")
+def update_move(data):
+    response_message = {
+        'player_name' :,
+        'filePath' : ,
+        'x' : x,
+        'y' : y,
+        'loc' :
+    }
+
+    emit('player_movement',response_message,broadcast =True)
+
+
+@socketio.on("disconnect")
+def disconnect(data):
+    emit('disconnect',broadcast =True)
 
 if __name__ == "__main__":
     app.run(debug=True)
