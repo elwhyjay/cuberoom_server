@@ -23,17 +23,17 @@ class Player():
     def return_path(self):
         return self.skin+"_"+self.hairC+"_"+self.cloth+"_"+self.hairS+"_"+self.faceS
 
-Player_list_by_sid = []
-Player_list_by_name = []
-first_floor_player = []
-basement_floor_player = []
-second_floor_player = []
+# Player_list_by_sid = {}
+# Player_list_by_name = {}
+# first_floor_player = {}
+# basement_floor_player = {}
+# second_floor_player = {}
 
 app = Flask(__name__, static_url_path='', static_folder='')
 CORS(app, resources={r'*': {'origins': 'http://localhost:5000'}})
 
 app.secret_key = "cuberoom"
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 
 
@@ -58,17 +58,17 @@ def user_information():
     skin =  request.get_json()["skin"]
     cloth = request.get_json()["cloth"]
 
-    session['username'] = name
-    session['room'] = "basement"
-    if Player_list_by_name[name] is not None:
-        return 0;
-    Player_list_by_sid[request.sid] = Player(name,faceS,hairS,hairC,skin,cloth)
-    Player_list_by_name[name] = request.sid
+    # session['username'] = name
+    # session['room'] = "basement"
+    # if Player_list_by_name[name] is not None:
+    #     return 0;
+    # Player_list_by_sid[request.sid] = Player(name,faceS,hairS,hairC,skin,cloth)
+    # Player_list_by_name[name] = request.sid
 
     filePath = f"/skin{skin}_hairC{hairC}_cloth{cloth}_hairS{hairS}_faceS{faceS}/"
     return url_for('static', filename=filePath)
 
-@app.route("./game")
+@app.route("/game")
 def foo():
     return 0
 
@@ -95,12 +95,24 @@ def user_information(data):
 
 
 
-@socketio.on('text', namespace='/chat')
-def text(message):
-    """Sent by a client when the user entered a new message.
-    The message is sent to all people in the room."""
-    room = session.get('room')
-    emit('message', {'msg': session.get('name') + ':' + message['msg']}, room=room)
+# @socketio.on('text', namespace='/chat')
+# def text(message):
+#     """Sent by a client when the user entered a new message.
+#     The message is sent to all people in the room."""
+#     room = session.get('room')
+#     emit('message', {'msg': session.get('name') + ':' + message['msg']}, room=room)
+
+@socketio.on('addChat')
+def addChat(data):
+    print(data)
+    # 해당 플레이어의 chat에 text를 더하는 코드 추가
+    emit('addChat', data)
+
+@socketio.on('removeChat')
+def removeChat(data):
+    print(data)
+    # data['id']를 가진 플레이어의 text를 지우는 코드 추가
+    emit('removeChat')
 
 
 @socketio.on('connection','/entrance')
@@ -122,4 +134,5 @@ def message(data):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # app.run(debug=True)
+    socketio.run(app, debug=True, port=3000)
