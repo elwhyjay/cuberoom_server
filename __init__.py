@@ -1,11 +1,10 @@
-#wsgi.py
-
 from flask import Flask, render_template, request, url_for, jsonify, session
 from flask.helpers import send_from_directory
 from flask_socketio import SocketIO, join_room,emit, rooms, send,close_room, join_room, leave_room
 import random
 import json
 import os
+from flask_cors import CORS
 
 
 
@@ -43,10 +42,12 @@ floor_player_list = {
 }
 total_player = 0
 
+app = Flask(__name__)#, static_url_path='/static/public', static_folder='')
+#CORS(app, resources={r'*': {'origins': 'http://localhost:5000'}})
+CORS(app, resources={r'*': {'origins': 'http://cuberoom.net'}})
 
-app = Flask(__name__)
 app.secret_key = "cuberoom"
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 
 
@@ -56,95 +57,42 @@ def base():
     return send_from_directory('cuberoom/public','index.html')
 
 
-@app.route("/<path:path>")
+@app.route("/<path:path>", methods=['GET', 'POST'])
 def home(path):
-    return send_from_directory('cuberoom/public',path)
+    return send_from_directory('cuberoom/public', path)
 
 
 
-# @app.route("/character-selection",methods=['POST'])
-# def user_information():
-#     name = request.form['name']
-#     names  = name.split('.')
-#     faceS = request.get_json("faceS")
-#     hairS = request.get_json("hairS")
-#     hairC = request.get_json("hairC")
-#     skin =  request.get_json("skin")
-#     cloth = request.get_json("cloth")
-#     #faceS,hairS,hairC,skin,cloth = request.form.getlist('')
-#     if Player_list_by_name[name] is not None:
-#         return 0;
-#     Player_list_by_sid[request.sid] = Player(name,faceS,hairS,hairC,skin,cloth)
-#     Player_list_by_name[name] = request.sid
-#     filePath = "/faceS"+faceS+"_hairS"+hairS+"_hairC"+hairC+"_hairS"+hairS+"_skin"+skin+"_cloth"+cloth+"/"
-#    ##return jsonify(faceS = request.get_json("faceS"),
-#    ##                 hairS = request.get_json("hairS"),
-#    ##                 hairC = request.get_json("hairC"),
-#    ##                 skin =  request.get_json("skin"),
-#    ##                 cloth = request.get_json("cloth"),)
-#     return  filePath
+@app.route("/character-selection",methods=['GET', 'POST'])
+def user_information():
+    name = request.get_json()["username"]
+    faceS = request.get_json()["faceS"]
+    hairS = request.get_json()["hairS"]
+    hairC = request.get_json()["hairC"]
+    skin =  request.get_json()["skin"]
+    cloth = request.get_json()["cloth"]
+
+    # name =  request.get_json("username") 
+    # faceS = request.get_json("faceS")
+    # hairS = request.get_json("hairS")
+    # hairC = request.get_json("hairC")
+    # skin =  request.get_json("skin")
+    # cloth = request.get_json("cloth")
+
+    # session['username'] = name
+    # session['room'] = "basement"
+    # if Player_list_by_name[name] is not None:
+    #     return 0;
+    # Player_list_by_sid[request.sid] = Player(name,faceS,hairS,hairC,skin,cloth)
+    # Player_list_by_name[name] = request.sid
+    Player_list_by_name[name] = Player(name,filePath)
+    filePath = f"results/skin{skin}_hairC{hairC}_cloth{cloth}_hairS{hairS}_faceS{faceS}/"
+    print(filePath)
+    return url_for('static',filename = filePath)
 
 
 
 
-
-# #########################################################################################
-# @socketio.on('text', namespace='/chat')
-# def text(message):
-#     """Sent by a client when the user entered a new message.
-#     The message is sent to all people in the room."""
-#     room = session.get('room')
-#     emit('message', {'msg': session.get('name') + ':' + message['msg']}, room=room)
-# #########################################################################################
-
-# @socketio.on('entrance_connection','/entrance')
-# def message(data):
-#     emit("entrance_response",data,namespace = './entrance',broadcast = True)
-
-# @socketio.on('1F_connection','/1F')
-# def message(data):
-#     Player_list_by_sid[data['id']]
-#     emit("1F_response",data,namespace = '/1F',broadcast = True)
-
-# @socketio.on('2F_connection','/2F')
-# def message(data):
-#     emit("2F_response",data,namespace = '/2F',broadcast = True)
-
-# # @socketio.on('3F_connection','/3F')
-# # def message(data):
-# #     emit("3F_response",data,namespace = '/3F',broadcast = True)
-
-# @socketio.on('5F_connection','/5F')
-# def message(data):
-#     emit("5F_response",data,namespace = '/5F',broadcast = True)
-
-# @socketio.on('6F_connection','/6F')
-# def message(data):
-#     emit("6F_response",data,namespace = '/6F',broadcast = True)
-
-# @socketio.on('7F_connection','/7F')
-# def message(data):
-#     emit("7F_response",data,namespace = '/7F',broadcast = True)
-
-# @socketio.on('8F_connection','/8F')
-# def message(data):
-#     emit("8F_response",data,namespace = '/8F',broadcast = True)
-
-# @socketio.on('1B_connection','/1B')
-# def message(data):
-#     emit("1B_response",data,namespace = '/1B',broadcast = True)
-
-# @socketio.on('2B_connection','/2B')
-# def message(data):
-#     emit("2B_response",data,namespace = '/2B',broadcast = True)
-
-
-####generating character######################
-#   from client
-#   data = {
-#       'name'     
-#  }
-#################################################
 @socketio.on('namecheck')
 def namecheck(data):
     if Player_list_by_name[data['name']] is not None:
@@ -153,18 +101,13 @@ def namecheck(data):
     else 
         send('namecheck',{'valid' : 0})
 
-####generating character######################
-#   from client
-#   data = {
-#       'name'     
-#       'avatar_path'
-#  }
-#################################################
+
 @socketio.on('connection')
 def connect(data):
     total_player +=1
     p = Player(data['name'],data['avatar_path'],'entrance')
     Player_list_by_name[data['name']] = p
+    Player_list_by_sid[data['id']] = p
     floor_player_list['entrance'][data['name']] = p
     player_info = {
         'name' : p.playerName,
@@ -177,23 +120,40 @@ def connect(data):
 
 
 
+
+
+
 ############################################
 #   from client
 #   data = {
-#       
+#       'id'     
 #       'cur_loc'(현재위치 )
-#       'next_loc' (이동하고자하는 위치)
+#       'next_loc'
 #  
 #   }
 ##############################################
 @socketio.on('change_loaction')
 def user_information(data):
-    username = session['usrname']
-
+    username = Player_list_by_sid[data['id']]
+    cur_loc = data['cur_loc']
+    next_loc = data['next_loc']
     change_data = {
         'avatar_path' : Player_list_by_name[username].avatar_path,
         'loc' : data['next_loc']
+        'x' :16*5, 
+        'y' 16*31:
     }
+    
+    Player_list_by_name[username].x = 16*5
+    Player_list_by_name[username].y = 16*31
+    Player_list_by_name[username].loc = next_loc
+
+    Player_list_by_sid[data['id']].x = 16*5
+    Player_list_by_sid[data['id']].y = 16*31
+    Player_list_by_sid[data['id']].loc = next_loc
+
+    floor_player_list[next_loc][username] = Player_list_by_sid[data['id']]
+    del floor_player_list[cur_loc][username]
     name_space = '/'+ data['next_loc']
     emit("change_location",change_data, namespace = name_space)
 
@@ -203,17 +163,16 @@ def user_information(data):
 #   data = {
 #       'name'     
 #       'cur_loc'(현재위치 )
-#       'next_loc' (이동하고자하는 위치)
+#       
 #  
 #   }
 ##############################################
 @socektio.on('addChat')
 def add_chat(data):
-    loc = data['loc']
-    chat_namespace = '/'+loc
-    Player_list_by_name[data['name']]
+    chat_namespace = '/'+Player_list_by_sid[data['id']].loc
+    usrname = Player_list_by_sid[data['id']].username
 
-    emit('addChat',{'player_name' : session['name'],'msg' : data['msg']},namespace = chat_namespace, broadcast = True)
+    emit('addChat',{'player_name' : usrname,'msg' : data['msg']},namespace = chat_namespace, broadcast = True)
 
 
 ############################################
@@ -227,15 +186,16 @@ def add_chat(data):
 ##############################################
 @socketio.on("removeChat")
 def remove_chat(data):
-    loc = data['loc']
+    loc = Player_list_by_sid[data['id']].loc
     chat_namespace = '/' + loc
-    emit('removeChat',{'name' : data['name'], 'msg': ''},namespace =chat_namespace, broadcast = True)
+    emit('removeChat',{'name' : data['id'], 'msg': ''},namespace =chat_namespace, broadcast = True)
 
 
 
 ############################################
 #   from client
 #   data = {
+#       id
 #       x
 #       y
 #       
@@ -243,13 +203,20 @@ def remove_chat(data):
 ##############################################
 @socketio.on("player_movement")
 def update_move(data):
+
     response_message = {
-        'player_name' : ,
-        'filePath' : ,
-        'x' : x,
-        'y' : y,
-        'loc' :
+        'player_name' : Player_list_by_sid[data['id']].username,
+        'filePath' : Player_list_by_sid[data['id']].avatar_path
+        'x' : data['x'],
+        'y' : data['y'],
+        'loc' : Player_list_by_sid[data['id']].loc
     }
+    Player_list_by_name[username].x =  data['x']
+    Player_list_by_name[username].y = data['y']
+    
+
+    Player_list_by_sid[data['id']].x =  data['x']
+    Player_list_by_sid[data['id']].y = data['y']
 
     emit('player_movement',response_message,broadcast =True)
 
@@ -257,18 +224,25 @@ def update_move(data):
 ############################################
 #   from client
 #   data = {
-#       'name'     
-#       'cur_loc'(현재위치 )
-#       'next_loc' (이동하고자하는 위치)
+#       'id'     
 #  
 #   }
 ##############################################
 @socketio.on("disconnect")
 def disconnect(data):
-    del Player_list_by_name[data['name']]
-    del floor_player_list[data['loc']][data['name']]
+    usrname = Player_list_by_sid[data['id']].username
+    loc = Player_list_by_sid[data['id']].loc
+    
+    del Player_list_by_name[usrname]
+
+    del floor_player_list[loc][usrname]
     total_player -=1
-    emit('disconnect',broadcast =True)
+
+    del Player_list_by_sid[data['id']]
+
+    emit('disconnect',{'id':data['id']},broadcast =True)
+
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # app.run(debug=True)
+    socketio.run(app, port=5000)
