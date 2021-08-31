@@ -71,7 +71,6 @@ def user_information():
 #     emit("change_response",change_data,name_space)
 
 
-id = 0
 players = {}
 
 class Player():
@@ -117,20 +116,17 @@ def addPlayer(data):
 
 @socketio.on('moveFloor')
 def moveFloor(data):
-    print(1111111112222222222)
-    global id
     global players
     prevRoom = players[data['id']]['floor']
     nextRoom = data['floor']
     players[data['id']]['floor'] = nextRoom
     leave_room(prevRoom)
     join_room(nextRoom)
-    emit('removePlayer', { id: data['id'] }, to=prevRoom)
+    emit('removePlayer', { 'id': data['id'] }, to=prevRoom)
     emit('playerList', players, to=nextRoom)
 
 @socketio.on('addChat')
 def addChat(data):
-    print(32333333223322344234423)
     global players
     players[data['id']]['chat'] = data['chat']
     emit('addChat', data, broadcast=True, to=players[data['id']]['floor'])
@@ -154,7 +150,7 @@ def movePlayer(data):
 def disconnect():
     global players
     players.pop(request.sid, None)
-    emit('removePlayer', { id: request.sid })
+    emit('removePlayer', { 'id': request.sid })
 
 # @socketio.on('connection','/entrance')
 # def message(data):
