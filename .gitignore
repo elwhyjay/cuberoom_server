@@ -3,5 +3,6 @@ cuberoom/
 cuberoom.ini
 myenv
 server.py
-static  
+static/  
 wsgi.py
+.DS_Store
