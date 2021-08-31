@@ -77,13 +77,33 @@ def moveFloor(data):
 def addChat(data):
     global players
     players[data['id']]['chat'] = data['chat']
-    emit('addChat', data, broadcast=True, to=players[data['id']]['floor'])
+    # emit('addChat', data, broadcast=True, to=players[data['id']]['floor'])
+    emit(
+        'addChat',
+        {
+            'id': data['id'],
+            'chat': data['chat'],
+            'floor': players[data['id']]['floor'],
+        },
+        broadcast=True,
+        to=players[data['id']]['floor']
+    )
 
 @socketio.on('removeChat')
 def removeChat(data):
     global players
     players[data['id']]['chat'] = ''
-    emit('removeChat', data, broadcast=True, to=players[data['id']]['floor'])
+    # emit('removeChat', data, broadcast=True, to=players[data['id']]['floor'])
+    emit(
+        'removeChat',
+        {
+            'id': data['id'],
+            'chat': '',
+            'floor': players[data['id']]['floor'],
+        },
+        broadcast=True,
+        to=players[data['id']]['floor']
+    )
 
 @socketio.on('movePlayer')
 def movePlayer(data):
