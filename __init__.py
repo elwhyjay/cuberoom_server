@@ -3,19 +3,19 @@ from flask.helpers import send_from_directory
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_cors import CORS
 
-app = Flask(__name__, static_url_path='', static_folder='')
-CORS(app, resources={r'*': {'origins': 'http://localhost:5000'}})
+app = Flask(__name__)#, static_url_path='', static_folder='')
+CORS(app, resources={r'*': {'origins': 'http://cuberoom.net'}})
 
 app.secret_key = "cuberoom"
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 @app.route("/")
 def base():
-    return send_from_directory('cuberoom-main/public','index.html')
+    return send_from_directory('cuberoom/public','index.html')
 
 @app.route("/<path:path>", methods=['GET', 'POST'])
 def home(path):
-    return send_from_directory('public', path)
+    return send_from_directory('cuberoom/public', path)
 
 @app.route("/character-selection",methods=['GET', 'POST'])
 def user_information():
@@ -26,7 +26,7 @@ def user_information():
     skin =  request.get_json()["skin"]
     cloth = request.get_json()["cloth"]
 
-    filePath = f"/skin{skin}_hairC{hairC}_cloth{cloth}_hairS{hairS}_faceS{faceS}/"
+    filePath = f"results/skin{skin}_hairC{hairC}_cloth{cloth}_hairS{hairS}_faceS{faceS}/"
     return url_for('static', filename=filePath)
 
 players = {}
@@ -101,4 +101,4 @@ def disconnect():
     emit('removePlayer', { 'id': request.sid })
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True, port=3000)
+    socketio.run(app, debug=True)
