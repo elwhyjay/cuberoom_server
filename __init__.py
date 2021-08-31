@@ -1,27 +1,10 @@
 from flask import Flask, render_template, request, url_for, jsonify, session
 from flask.helpers import send_from_directory
-from flask_socketio import SocketIO, join_room,emit, rooms, send,close_room, join_room, leave_room
+from flask_socketio import SocketIO, emit, rooms, send, close_room, join_room, leave_room
 import random
 import json
 import os
 from flask_cors import CORS
-
-
-
-
-
-
-class Player():
-    def __init__ (self,playerName="unnamed",faceS = "face1", hairS = "hairS1", hairC = "hairC1", skin = "skin1", cloth = "cloth1", loc ="basement" ):
-        self.playerName = playerName
-        self.faceS = faceS
-        self.hairS = hairS
-        self.hairC = hairC
-        self.skin = skin
-        self.cloth = cloth
-        self.loc = loc
-    def return_path(self):
-        return self.skin+"_"+self.hairC+"_"+self.cloth+"_"+self.hairS+"_"+self.faceS
 
 # Player_list_by_sid = {}
 # Player_list_by_name = {}
@@ -35,19 +18,13 @@ CORS(app, resources={r'*': {'origins': 'http://localhost:5000'}})
 app.secret_key = "cuberoom"
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-
-
-
 @app.route("/")
 def base():
     return send_from_directory('cuberoom-main/public','index.html')
 
-
 @app.route("/<path:path>", methods=['GET', 'POST'])
 def home(path):
     return send_from_directory('public', path)
-
-
 
 @app.route("/character-selection",methods=['GET', 'POST'])
 def user_information():
@@ -68,70 +45,132 @@ def user_information():
     filePath = f"/skin{skin}_hairC{hairC}_cloth{cloth}_hairS{hairS}_faceS{faceS}/"
     return url_for('static', filename=filePath)
 
-@app.route("/game")
-def foo():
-    return 0
+# @app.route("/game")
+# def foo():
+#     return 0
 
-@socketio.on('change_loaction','character-generator')
-def user_information(data):
-    username = data['username']
-    Player_list_by_sid['name'].loc = data['cur_loc']
-    previous_room = data['prev_loc']
-    leave_room(previous_room)
-    change_data = {
-        'name' : username,
-        'faceS' : Player_list_by_sid['faceS'].faceS,
-        'hairsS' : Player_list_by_sid['hairS'].hairS,
-        'hairC' : Player_list_by_sid['hairC'].hairC,
-        'skin' : Player_list_by_sid['skin'].skin,
-        'cloth' : Player_list_by_sid['cloth'].cloth,
-        'loc' : Player_list_by_sid['cur_loc'].loc,
-    }
-    session['room'] = change_data['loc']
-    new_room = session.get('room')
-    join_room(new_room)
-    name_space = '/'+ data['cur_loc']
-    emit("change_response",change_data,name_space)
+# @socketio.on('change_loaction','character-generator')
+# def user_information(data):
+#     username = data['username']
+#     Player_list_by_sid['name'].loc = data['cur_loc']
+#     previous_room = data['prev_loc']
+#     leave_room(previous_room)
+#     change_data = {
+#         'name' : username,
+#         'faceS' : Player_list_by_sid['faceS'].faceS,
+#         'hairsS' : Player_list_by_sid['hairS'].hairS,
+#         'hairC' : Player_list_by_sid['hairC'].hairC,
+#         'skin' : Player_list_by_sid['skin'].skin,
+#         'cloth' : Player_list_by_sid['cloth'].cloth,
+#         'loc' : Player_list_by_sid['cur_loc'].loc,
+#     }
+#     session['room'] = change_data['loc']
+#     new_room = session.get('room')
+#     # join_room(new_room)
+#     name_space = '/'+ data['cur_loc']
+#     emit("change_response",change_data,name_space)
 
 
+id = 0
+players = {}
 
-# @socketio.on('text', namespace='/chat')
-# def text(message):
-#     """Sent by a client when the user entered a new message.
-#     The message is sent to all people in the room."""
-#     room = session.get('room')
-#     emit('message', {'msg': session.get('name') + ':' + message['msg']}, room=room)
+class Player():
+    def __init__ (self, id, name, imgUrl, floor, x, y):
+        self.id = id
+        self.name = name
+        self.imgUrl = imgUrl
+        self.floor = floor
+        self.x = x
+        self.y = y
+        self.chat = ''
+        self.direction = 'down'
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'imgUrl': self.imgUrl,
+            'floor': self.floor,
+            'x': self.x,
+            'y': self.y,
+            'chat': self.chat,
+            'direction': self.direction,
+        }
+
+@socketio.on('addPlayer')
+def addPlayer(data):
+    global players
+    player = Player(data['id'], data['name'], data['imgUrl'], data['floor'], data['x'], data['y'])
+    players[data['id']] = player.serialize()
+    join_room(player.floor)
+    # emit('addPlayer', {
+    #     'id': player.id,
+    #     'name': player.name,
+    #     'imgUrl': player.imgUrl,
+    #     'floor': player.floor,
+    #     'x': player.x,
+    #     'y': player.y,
+    #     'chat': player.chat,
+    #     'direction': player.direction,
+    # }, broadcast=True)
+    emit('playerList', players, broadcast=True, to=data['floor'])
+
+@socketio.on('moveFloor')
+def moveFloor(data):
+    print(1111111112222222222)
+    global id
+    global players
+    prevRoom = players[data['id']]['floor']
+    nextRoom = data['floor']
+    players[data['id']]['floor'] = nextRoom
+    leave_room(prevRoom)
+    join_room(nextRoom)
+    emit('removePlayer', { id: data['id'] }, to=prevRoom)
+    emit('playerList', players, to=nextRoom)
 
 @socketio.on('addChat')
 def addChat(data):
-    print(data)
-    # 해당 플레이어의 chat에 text를 더하는 코드 추가
-    emit('addChat', data)
+    print(32333333223322344234423)
+    global players
+    players[data['id']]['chat'] = data['chat']
+    emit('addChat', data, broadcast=True, to=players[data['id']]['floor'])
 
 @socketio.on('removeChat')
 def removeChat(data):
-    print(data)
-    # data['id']를 가진 플레이어의 text를 지우는 코드 추가
-    emit('removeChat')
+    global players
+    players[data['id']]['chat'] = ''
+    emit('removeChat', data, broadcast=True, to=players[data['id']]['floor'])
 
+@socketio.on('movePlayer')
+def movePlayer(data):
+    global players
+    if data['id'] in players.keys():
+        players[data['id']]['x'] = data['x']
+        players[data['id']]['y'] = data['y']
+        players[data['id']]['direction'] = data['direction']
+        emit('playerList', players, broadcast=True, to=data['floor'])
 
-@socketio.on('connection','/entrance')
-def message(data):
-    emit("response",data,namespace = './entrance')
+@socketio.on('disconnect')
+def disconnect():
+    global players
+    players.pop(request.sid, None)
+    emit('removePlayer', { id: request.sid })
 
-@socketio.on('connection','/basement')
-def message(data):
-    emit("response",data,namespace = './basement')
+# @socketio.on('connection','/entrance')
+# def message(data):
+#     emit("response",data,namespace = './entrance')
 
-@socketio.on('connection','/firstFloor')
-def message(data):
-    emit("response",data,namespace = '/firstFloor')
+# @socketio.on('connection','/basement')
+# def message(data):
+#     emit("response",data,namespace = './basement')
 
-@socketio.on('connection','/secondFloor')
-def message(data):
-    emit("response",data,namespace = '/secondFloor')
+# @socketio.on('connection','/firstFloor')
+# def message(data):
+#     emit("response",data,namespace = '/firstFloor')
 
-
+# @socketio.on('connection','/secondFloor')
+# def message(data):
+#     emit("response",data,namespace = '/secondFloor')
 
 if __name__ == "__main__":
     # app.run(debug=True)
