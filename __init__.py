@@ -70,7 +70,7 @@ def moveFloor(data):
     players[data['id']]['floor'] = nextRoom
     leave_room(prevRoom)
     join_room(nextRoom)
-    emit('removePlayer', { 'id': data['id'] }, to=prevRoom)
+    emit('removePlayer', { 'id': data['id'] }, broadcast=True, to=prevRoom)
     emit('playerList', players, broadcast=True, to=nextRoom)
 
 @socketio.on('addChat')
