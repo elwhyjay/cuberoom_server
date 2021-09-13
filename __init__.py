@@ -2,6 +2,8 @@ from flask import Flask, request, url_for
 from flask.helpers import send_from_directory
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_cors import CORS
+import time
+
 
 app = Flask(__name__)#, static_url_path='', static_folder='')
 CORS(app, resources={r'*': {'origins': 'http://cuberoom.net'}})
@@ -61,6 +63,7 @@ def addPlayer(data):
     player = Player(data['id'], data['name'], data['imgUrl'], data['floor'], data['x'], data['y'])
     players[data['id']] = player.serialize()
     join_room(player.floor)
+    time.sleep(0.5)
     emit('playerList', players, broadcast=True, to=data['floor'])
 
 @socketio.on('moveFloor')
@@ -72,6 +75,7 @@ def moveFloor(data):
     leave_room(prevRoom)
     join_room(nextRoom)
     emit('removePlayer', { 'id': data['id'] }, broadcast=True, to=prevRoom)
+    time.sleep(1)
     emit('playerList', players, broadcast=True, to=nextRoom)
 
 @socketio.on('addChat')
@@ -113,6 +117,7 @@ def movePlayer(data):
         players[data['id']]['x'] = data['x']
         players[data['id']]['y'] = data['y']
         players[data['id']]['direction'] = data['direction']
+        
         emit('playerList', players, broadcast=True, to=data['floor'])
 
 @socketio.on('disconnect')
