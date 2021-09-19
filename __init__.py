@@ -5,6 +5,8 @@ from flask_cors import CORS
 
 app = Flask(__name__)#, static_url_path='', static_folder='')
 CORS(app, resources={r'*': {'origins': 'http://cuberoom.net'}})
+# app = Flask(__name__, static_url_path='', static_folder='')
+# CORS(app, resources={r'*': {'origins': 'http://localhost:5000'}})
 
 app.secret_key = "cuberoom"
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -16,6 +18,7 @@ def base():
 @app.route("/<path:path>", methods=['GET', 'POST'])
 def home(path):
     return send_from_directory('cuberoom/public', path)
+    # return send_from_directory('public', path)
 
 @app.route("/character-selection",methods=['GET', 'POST'])
 def user_information():
@@ -27,6 +30,7 @@ def user_information():
     cloth = request.get_json()["cloth"]
 
     filePath = f"results/skin{skin}_hairC{hairC}_cloth{cloth}_hairS{hairS}_faceS{faceS}/"
+    # filePath = f"/skin{skin}_hairC{hairC}_cloth{cloth}_hairS{hairS}_faceS{faceS}/"
     return url_for('static', filename=filePath)
 
 players = {}
@@ -122,3 +126,4 @@ def disconnect():
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
+    # socketio.run(app, debug=True, port=3000)
