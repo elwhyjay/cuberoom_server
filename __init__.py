@@ -3,6 +3,7 @@ from flask.helpers import send_from_directory
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_cors import CORS
 import time
+import json
 
 
 app = Flask(__name__)#, static_url_path='', static_folder='')
@@ -10,6 +11,9 @@ CORS(app, resources={r'*': {'origins': 'http://cuberoom.net'}})
 
 app.secret_key = "cuberoom"
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+
+
 @app.route("/")
 def base():
     return send_from_directory('cuberoom/public','index.html')
@@ -63,20 +67,37 @@ def addPlayer(data):
     player = Player(data['id'], data['name'], data['imgUrl'], data['floor'], data['x'], data['y'])
     players[data['id']] = player.serialize()
     join_room(player.floor)
-    time.sleep(0.5)
-    emit('playerList', players, broadcast=True, to=data['floor'])
+    #time.sleep(0.6)
+
+    with open("player.json","r") as tmp_json:
+            player_json = json.load(tmp_json)
+    
+    player_json[data['id']] = player.serialize()
+
+    with open("player.json","w") as outfile:
+        json.dump(player_json,outfile)
+    emit('playerList', player_json, broadcast=True, to=data['floor'])
+    print(player_json)
 
 @socketio.on('moveFloor')
 def moveFloor(data):
     global players
-    prevRoom = players[data['id']]['floor']
+    with open("player.json","r") as tmp_json:
+        player_json = json.load(tmp_json)
+    
+    prevRoom = player_json[data['id']]['floor']
     nextRoom = data['floor']
-    players[data['id']]['floor'] = nextRoom
+
+    player_json[data['id']]['floor'] = nextRoom
     leave_room(prevRoom)
     join_room(nextRoom)
+
+    with open("player.json","w") as outfile:
+        json.dump(player_json,outfile)
     emit('removePlayer', { 'id': data['id'] }, broadcast=True, to=prevRoom)
-    time.sleep(1)
-    emit('playerList', players, broadcast=True, to=nextRoom)
+    time.sleep(1.0)
+    emit('playerList', player_json, broadcast=True, to=nextRoom)
+    print(player_json)
 
 @socketio.on('addChat')
 def addChat(data):
@@ -113,16 +134,28 @@ def removeChat(data):
 @socketio.on('movePlayer')
 def movePlayer(data):
     global players
-    if data['id'] in players.keys():
-        players[data['id']]['x'] = data['x']
-        players[data['id']]['y'] = data['y']
-        players[data['id']]['direction'] = data['direction']
-        
-        emit('playerList', players, broadcast=True, to=data['floor'])
+    with open("player.json","r") as tmp_json:
+        player_json = json.load(tmp_json)
+
+    if data['id'] in player_json.keys():
+        #print(player_json[data['id']])
+        player_json[data['id']]['x'] = data['x']
+        player_json[data['id']]['y'] = data['y']
+        player_json[data['id']]['direction'] = data['direction']
+        with open("player.json","w") as outfile:
+            json.dump(player_json,outfile)    
+        emit('playerList', player_json, broadcast=True, to=data['floor'])
 
 @socketio.on('disconnect')
 def disconnect():
     global players
+    with open("player.json","r") as tmp_json:
+        player_json = json.load(tmp_json)
+
+    player_json.pop(request.sid)
+
+    with open("player.json","w") as outfile:
+        json.dump(player_json,outfile)
     players.pop(request.sid, None)
     emit('removePlayer', { 'id': request.sid })
 
