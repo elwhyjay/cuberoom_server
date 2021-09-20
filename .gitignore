@@ -6,3 +6,5 @@ server.py
 static/  
 wsgi.py
 .DS_Store
+.swp
+player.json
