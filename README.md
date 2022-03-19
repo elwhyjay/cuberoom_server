@@ -16,6 +16,8 @@ https://github.com/leegakyeong/cuberoom
 
 ### Nginx + uWSGI + Flask
 
+- Multiuser
+- Chat
 
 ------
 
